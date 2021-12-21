@@ -1,8 +1,3 @@
-// Tried to create a red black tree using recursion, wasn't a good idea
-// After some talk with my professor I came to know that there wouldn't be much gain
-// on using recursion afterall
-// I'll try the iterative way adding a *parent field on Node
-
 #include <stdio.h>
 #include <iostream>
 #define RED true
@@ -13,7 +8,7 @@ struct Node
 {
     int value;
     bool color;
-    Node *left, *right;
+    Node *left, *right, *parent;
 };
 
 typedef struct Node *ABB; // Estrutura da arvore criada
@@ -23,6 +18,7 @@ ABB inicialize(int value)
     ABB root = new Node();
     root->value = value;
     root->left = root->right = nullptr;
+    root->parent = nullptr;
     root->color = RED;
     return root;
 }
@@ -76,43 +72,10 @@ void change_color(ABB &root)
         root->right->color = !root->right->color;
 }
 
-bool safe_right(ABB root)
-{
-    if (root)
-        return color(root->right);
-    else
-        return BLACK;
-}
-
-bool safe_left(ABB root)
-{
-    if (root)
-        return color(root->left);
-    else
-        return BLACK;
-}
 
 void insert(ABB &root, int value)
 {
-    if (root == nullptr)
-    {
-        root = inicialize(value);
-        return;
-    }
-
-    if(color(root->right)==RED && color(root->left)==RED)
-        change_color(root);
-
-    if (value <= root->value)
-        insert(root->left, value);
-    else
-        insert(root->right, value);
-
-    if(color(root->right) == RED && color(root->left) == BLACK)
-        turn_left(root);
-
-    if(color(root->left)==RED && safe_left(root->left)==RED)
-        turn_right(root);
+    // iterative
 }
 
 ABB sucessor(ABB root)
