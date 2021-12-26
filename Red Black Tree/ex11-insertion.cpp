@@ -1,8 +1,3 @@
-// Tried to create a red black tree using recursion, wasn't a good idea
-// After some talk with my professor I came to know that there wouldn't be much gain
-// on using recursion afterall
-// I'll try the iterative way adding a *parent field on Node
-
 #include <stdio.h>
 #include <iostream>
 #define RED true
@@ -13,7 +8,7 @@ struct Node
 {
     int value;
     bool color;
-    Node *left, *right;
+    Node *left, *right, *parent;
 };
 
 typedef struct Node *ABB; // Estrutura da arvore criada
@@ -23,6 +18,7 @@ ABB inicialize(int value)
     ABB root = new Node();
     root->value = value;
     root->left = root->right = nullptr;
+    root->parent = nullptr;
     root->color = RED;
     return root;
 }
@@ -37,26 +33,50 @@ ABB search(ABB root, int value)
         return search(root->right, value);
 }
 
-void turn_left(ABB &root)
+ABB turn_left(ABB root)
 {
     ABB pB;
     pB = root->right;
     root->right = pB->left;
+    if(root->right)
+        root->right->parent = root;
+
     pB->left = root;
-    pB->color = root->color;
-    root->color = RED;
-    root = pB;
+
+    pB->parent = root->parent;
+
+    if (root->parent)
+        if (root == root->parent->left)
+            root->parent->left = pB;
+        else
+            root->parent->right = pB;
+
+    pB->left = root;
+    root->parent = pB;
+    return pB;
 }
 
-void turn_right(ABB &root)
+ABB turn_right(ABB root)
 {
     ABB pB;
     pB = root->left;
     root->left = pB->right;
+    if(root->left)
+        root->left->parent = root;
+    
     pB->right = root;
-    pB->color = root->color;
-    root->color = RED;
-    root = pB;
+
+    pB->parent = root->parent;
+
+    if (root->parent)
+        if (root == root->parent->right)
+            root->parent->right = pB;
+        else
+            root->parent->left = pB;
+
+    pB->right = root;
+    root->parent = pB;
+    return pB;
 }
 
 bool color(ABB root)
@@ -76,43 +96,97 @@ void change_color(ABB &root)
         root->right->color = !root->right->color;
 }
 
-bool safe_right(ABB root)
+void change_color2(ABB &root)
 {
-    if (root)
-        return color(root->right);
-    else
-        return BLACK;
+    root->color = BLACK;
+    if (root->left)
+        root->left->color = RED;
+    if (root->right)
+        root->right->color = RED;
 }
 
-bool safe_left(ABB root)
+void balance(ABB &root, ABB &z)
 {
-    if (root)
-        return color(root->left);
-    else
-        return BLACK;
+
+    while (true)
+    {
+        if (color(z->parent) == RED && color(z) == RED)
+        {
+            if (z->parent->parent)
+            {
+                ABB B = z;
+                ABB A = z->parent;
+                ABB C = z->parent->parent;
+                ABB D = nullptr;
+
+                if (A == C->right)
+                {
+                    D = z->parent->parent->left;
+                    if (color(D) == RED)
+                        change_color(C);
+                    else if (A->left == B)
+                    {
+                        A = turn_right(A);
+                        C = turn_left(C);
+                        change_color2(A);
+                    }
+                    else
+                    {
+                        C = turn_left(C);
+                        change_color2(A);
+                    }
+                }
+                else
+                {
+                    D = z->parent->parent->right;
+                    if (color(D) == RED)
+                        change_color(C);
+                    else if (A->right == B)
+                    {
+                        A = turn_left(A);
+                        C = turn_right(C);
+                        change_color2(A);
+                    }
+                    else
+                    {
+                        C = turn_right(C);
+                        change_color2(A);
+                    }
+                }
+            }
+        }
+        z = z->parent;
+        if (!z)
+            break;
+    }
 }
 
 void insert(ABB &root, int value)
 {
-    if (root == nullptr)
+    ABB x = root;
+    ABB y = nullptr;
+    ABB z = inicialize(value);
+
+    while (x)
     {
-        root = inicialize(value);
-        return;
+        y = x;
+        if (z->value < x->value)
+            x = x->left;
+        else
+            x = x->right;
     }
+    z->parent = y;
 
-    if(color(root->right)==RED && color(root->left)==RED)
-        change_color(root);
-
-    if (value <= root->value)
-        insert(root->left, value);
+    if (!y)
+        root = z;
+    else if (z->value < y->value)
+        y->left = z;
     else
-        insert(root->right, value);
-
-    if(color(root->right) == RED && color(root->left) == BLACK)
-        turn_left(root);
-
-    if(color(root->left)==RED && safe_left(root->left)==RED)
-        turn_right(root);
+        y->right = z;
+    if (z)
+        balance(root, z);
+    while (root->parent)
+        root = root->parent;
 }
 
 ABB sucessor(ABB root)
@@ -232,7 +306,10 @@ int main()
 
     cin >> x;
     test = search(root, x);
-    cout << black_height(test);
+    if(test)
+        cout << black_height(test);
+    else
+        cout << "Valor nao encontrado";
 
     free_ABB(root);
     return 0;
