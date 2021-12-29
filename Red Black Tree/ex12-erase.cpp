@@ -38,7 +38,7 @@ ABB turn_left(ABB root)
     ABB pB;
     pB = root->right;
     root->right = pB->left;
-    if(root->right)
+    if (root->right)
         root->right->parent = root;
 
     pB->left = root;
@@ -61,9 +61,9 @@ ABB turn_right(ABB root)
     ABB pB;
     pB = root->left;
     root->left = pB->right;
-    if(root->left)
+    if (root->left)
         root->left->parent = root;
-    
+
     pB->right = root;
 
     pB->parent = root->parent;
@@ -105,7 +105,7 @@ void change_color2(ABB &root)
         root->right->color = RED;
 }
 
-void balance(ABB &root, ABB &z)
+void insertion_balance(ABB &root, ABB &z)
 {
 
     while (true)
@@ -184,7 +184,7 @@ void insert(ABB &root, int value)
     else
         y->right = z;
     if (z)
-        balance(root, z);
+        insertion_balance(root, z);
     while (root->parent)
         root = root->parent;
 }
@@ -196,9 +196,59 @@ ABB sucessor(ABB root)
     return root;
 }
 
-void erase(ABB &root, int value)
+void erase_balance(ABB &root, ABB &z)
 {
-    // Got to work on an iterative erase
+
+}
+
+void erase(ABB &root, ABB &z)
+{
+    if(!z->left && !z->right)
+    {
+        if (z == z->parent->left)
+            z->parent->left = nullptr;
+        else
+            z->parent->right = nullptr;
+        delete z;
+    }
+    else if (!z->left && z->right)
+    {
+        if (z == z->parent->left)
+        {
+            z->parent->left = z->right;
+            z->right->parent = z->parent->left;
+            delete z;
+        }
+        else
+        {
+            z->parent->right = z->right;
+            z->right->parent = z->parent->right;
+            delete z;
+        }
+    }
+    else if (z->left && !z->right)
+    {
+        if (z == z->parent->left)
+        {
+            z->parent->left = z->left;
+            z->left->parent = z->parent->left;
+            delete z;
+        }
+        else
+        {
+            z->parent->right = z->left;
+            z->left->parent = z->parent->right;
+            delete z;
+        }
+    }
+    else
+    {
+        ABB temp = sucessor(z->right);
+        z->value = temp->value;
+        erase(z->right, temp);
+    }
+    if(color(z)==BLACK)
+        erase_balance(root, z);
 }
 
 int height(ABB root)
@@ -267,19 +317,23 @@ int main()
         }
         else
         {
-            cout << height(test) << ", ";
-            cout << height(test->left) + 1 << ", ";
-            cout << height(test->right) + 1 << "\n";
+            //cout << height(test) << ", ";
+            //cout << height(test->left) + 1 << ", ";
+            //cout << height(test->right) + 1 << "\n";
+            erase(root, test);
         }
     }
 
+    print_ABB(root);
+
+    /*
     cin >> x;
     test = search(root, x);
-    if(test)
+    if (test)
         cout << black_height(test);
     else
         cout << "Valor nao encontrado";
-
+    */
     free_ABB(root);
     return 0;
 }
