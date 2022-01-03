@@ -1,3 +1,5 @@
+//  UNCOMPLETE CODE
+//  the erase method has a lot of bugs, still need to work on them
 #include <stdio.h>
 #include <iostream>
 #define RED true
@@ -33,7 +35,7 @@ ABB search(ABB root, int value)
         return search(root->right, value);
 }
 
-ABB turn_left(ABB root)
+ABB turn_left(ABB &root)
 {
     ABB pB;
     pB = root->right;
@@ -43,7 +45,10 @@ ABB turn_left(ABB root)
 
     pB->left = root;
 
-    pB->parent = root->parent;
+    if(root->parent)
+        pB->parent = root->parent;
+    else
+        pB->parent = nullptr;
 
     if (root->parent)
         if (root == root->parent->left)
@@ -53,10 +58,11 @@ ABB turn_left(ABB root)
 
     pB->left = root;
     root->parent = pB;
+    root = pB;
     return pB;
 }
 
-ABB turn_right(ABB root)
+ABB turn_right(ABB &root)
 {
     ABB pB;
     pB = root->left;
@@ -76,6 +82,7 @@ ABB turn_right(ABB root)
 
     pB->right = root;
     root->parent = pB;
+    root = pB;
     return pB;
 }
 
@@ -107,7 +114,6 @@ void change_color2(ABB &root)
 
 void insertion_balance(ABB &root, ABB &z)
 {
-
     while (true)
     {
         if (color(z->parent) == RED && color(z) == RED)
@@ -196,59 +202,222 @@ ABB sucessor(ABB root)
     return root;
 }
 
-void erase_balance(ABB &root, ABB &z)
+void erase_balance(ABB &root, ABB &x)
 {
-
+    ABB w;
+    while (x != root && color(x) == BLACK)
+    {
+        if (!x)
+            break;
+        if(!x->parent)
+            break;
+        ABB aux = x->parent;
+        if (x == x->parent->left)
+        {
+            w = x->parent->right;
+            if (color(w) == RED)
+            {
+                w->color = BLACK;
+                x->parent->color = RED;
+                if(x->parent==root)
+                    x->parent = turn_left(root);
+                else
+                    x->parent = turn_left(x->parent);
+                x->parent = aux;
+                w = x->parent->right;
+            }
+            if (color(w->left) == BLACK && color(w->right) == BLACK)
+            {
+                w->color = RED;
+                x = x->parent;
+            }
+            else
+            {
+                if (color(w->right) == BLACK)
+                {
+                    w->left->color = BLACK;
+                    w->color = RED;
+                    w = turn_right(w);
+                }
+                w = x->parent->right;
+                w->color = x->parent->color;
+                x->parent->color = BLACK;
+                w->right->color = BLACK;
+                x->parent = turn_left(x->parent);
+                x = root;
+            }
+        }
+        else
+        {
+            w = x->parent->left;
+            if (color(w) == RED)
+            {
+                w->color = BLACK;
+                x->parent->color = RED;
+                if(x->parent==root)
+                    x->parent = turn_left(root);
+                else
+                    x->parent = turn_left(x->parent);
+                x->parent = aux;
+                w = x->parent->left;
+            }
+            if (color(w->right) == BLACK && color(w->left) == BLACK)
+            {
+                w->color = RED;
+                x = x->parent;
+            }
+            else
+            {
+                if (color(w->right) == BLACK)
+                {
+                    w->right->color = BLACK;
+                    w->color = RED;
+                    w = turn_right(w);
+                }
+                w = x->parent->left;
+                w->color = x->parent->color;
+                x->parent->color = BLACK;
+                if(w->left)
+                    w->left->color = BLACK;
+                x->parent = turn_left(x->parent);
+                x = root;
+            }
+        }
+    }
+    if (x && x!=root)
+        x->color = BLACK;
 }
 
-void erase(ABB &root, ABB &z)
+ABB erase(ABB &root, ABB &z, int &signal)
 {
-    if(!z->left && !z->right)
+    ABB temp, x = nullptr;
+    if (!z->left)
     {
-        if (z == z->parent->left)
-            z->parent->left = nullptr;
-        else
-            z->parent->right = nullptr;
-        delete z;
-    }
-    else if (!z->left && z->right)
-    {
-        if (z == z->parent->left)
+        if (!z->right)
         {
-            z->parent->left = z->right;
-            z->right->parent = z->parent->left;
-            delete z;
+            if (!z->parent)
+                return z;
+            else if (z == z->parent->right)
+            {
+                ABB aux = z->parent;
+                if (color(z) == BLACK)
+                    erase_balance(root, z);
+                delete aux->right;
+                signal = 1;
+                aux->right = nullptr;
+                return aux;
+            }
+            else
+            {
+                ABB aux = z->parent;
+                if (color(z) == BLACK)
+                    erase_balance(root, z);
+                delete aux->left;
+                signal = 1;
+                aux->left = nullptr;
+                return aux;
+            }
         }
         else
         {
-            z->parent->right = z->right;
-            z->right->parent = z->parent->right;
-            delete z;
-        }
-    }
-    else if (z->left && !z->right)
-    {
-        if (z == z->parent->left)
-        {
-            z->parent->left = z->left;
-            z->left->parent = z->parent->left;
-            delete z;
-        }
-        else
-        {
-            z->parent->right = z->left;
-            z->left->parent = z->parent->right;
-            delete z;
+            if (!z->parent)
+            {
+                ABB aux = z->right;
+                if (color(aux) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux->color = BLACK;
+                aux->parent = nullptr;
+                root = aux;
+                return root;
+            }
+            else if (z == z->parent->right)
+            {
+                ABB aux = z->parent;
+                ABB aux2 = z->right;
+                if (color(aux2) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux2->color = BLACK;
+                delete aux->right;
+                signal = 1;
+                aux->right = aux2;
+                aux2->parent = aux;
+                return aux;
+            }
+            else
+            {
+                ABB aux = z->parent;
+                ABB aux2 = z->right;
+                if (color(aux2) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux2->color = BLACK;
+                delete aux->right;
+                signal = 1;
+                aux->left = aux2;
+                aux2->parent = aux;
+                return aux;
+            }
         }
     }
     else
     {
-        ABB temp = sucessor(z->right);
-        z->value = temp->value;
-        erase(z->right, temp);
+        if (!z->right)
+        {
+            if (!z->parent)
+            {
+                ABB aux = z->left;
+                if (color(aux) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux->color = BLACK;
+                aux->parent = nullptr;
+                root = z->left;
+                return root;
+            }
+            else if (z == z->parent->right)
+            {
+                ABB aux = z->parent;
+                ABB aux2 = z->left;
+                if (color(aux2) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux2->color = BLACK;
+                delete aux->left;
+                signal = 1;
+                aux->right = aux2;
+                aux2->parent = aux;
+                return aux;
+            }
+            else
+            {
+                ABB aux = z->parent;
+                ABB aux2 = z->left;
+                if (color(aux2) == BLACK)
+                    erase_balance(root, z);
+                else
+                    aux2->color = BLACK;
+                delete aux->left;
+                signal = 1;
+                aux->left = aux2;
+                aux2->parent = aux;
+                return aux;
+            }
+        }
+        else
+        {
+            temp = sucessor(z->right);
+            z->value = temp->value;
+            // z->color = temp->color;
+            temp = erase(z->right, temp, signal);
+            if (!signal)
+                delete temp;
+            signal = 1;
+            return z;
+        }
     }
-    if(color(z)==BLACK)
-        erase_balance(root, z);
+    return z;
 }
 
 int height(ABB root)
@@ -266,6 +435,16 @@ int black_height(ABB root)
         return black_height(root->left) + 1;
     else
         return black_height(root->left);
+}
+
+int red_height(ABB root)
+{
+    if (root == nullptr)
+        return 0;
+    if (root->color == RED)
+        return max(red_height(root->left), red_height(root->right)) + 1;
+    else
+        return max(red_height(root->left), red_height(root->right));
 }
 
 void print_ABB(ABB root)
@@ -288,8 +467,8 @@ void free_ABB(ABB &root)
 
 int main()
 {
-    ABB root = nullptr, test;
-    int x;
+    ABB root = nullptr, test, temp;
+    int x, signal = 0;
 
     while (true)
     {
@@ -317,23 +496,23 @@ int main()
         }
         else
         {
-            //cout << height(test) << ", ";
-            //cout << height(test->left) + 1 << ", ";
-            //cout << height(test->right) + 1 << "\n";
-            erase(root, test);
+            cout << height(test) << ", ";
+            cout << height(test->left) + 1 << ", ";
+            cout << height(test->right) + 1 << "\n";
+            temp = erase(root, test, signal);
+            if (!signal)
+                delete temp;
+            signal = 0;
         }
     }
 
-    print_ABB(root);
-
-    /*
     cin >> x;
     test = search(root, x);
     if (test)
-        cout << black_height(test);
+        cout << red_height(test);
     else
         cout << "Valor nao encontrado";
-    */
+
     free_ABB(root);
     return 0;
 }
